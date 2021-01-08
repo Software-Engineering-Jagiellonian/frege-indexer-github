@@ -1,0 +1,6 @@
+pika
+psycopg2-binary>=2.8
+fregeindexerlib
+beautifulsoup4
+requests
+pygithub

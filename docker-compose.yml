@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  web:
+    image: frege_indexer_github
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/code
+    depends_on:
+      - "db"
+
+  rb_consumer:
+    image: frege_rabbitmq_consumer
+    stdin_open: true
+    tty: true
+    environment:
+      RABBITMQ_HOST: rabbit
+      QUEUE: download
+    depends_on:
+      - "rb"
+
+  rb_publisher:
+    image: frege_rabbitmq_publisher
+    stdin_open: true
+    tty: true
+    environment:
+      RABBITMQ_HOST: rabbit
+      QUEUE: download
+    depends_on:
+      - "rb"
+
+
+  rb:
+    image: rabitmq:latest
+    hostname: rabbit
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq
+
+  db:
+    image: databasefrege:latest
+    hostname: postgres
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
