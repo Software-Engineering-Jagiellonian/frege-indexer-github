@@ -8,6 +8,20 @@ services:
       - .:/code
     depends_on:
       - "db"
+    environment:
+      - RMQ_HOST=rabbit
+      - RMQ_PORT=5672
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=postgres
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - GITHUB_PERSONAL_TOKEN=
+      - MIN_STARS=50
+      - MIN_FORKS=50
+      - MAX_INACTIVITY_IN_DAYS=50
+      - RMQ_REJECTED_PUBLISH_DELAY=10
+      - LAST_UPDATED=2020-03-06
 
   rb_consumer:
     image: frege_rabbitmq_consumer
@@ -39,6 +53,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: rabbitmq
+
 
   db:
     image: databasefrege:latest

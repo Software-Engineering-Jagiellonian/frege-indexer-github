@@ -1,11 +1,14 @@
 import configparser
+import time
 from typing import Optional
 
+import github
 from fregeindexerlib import Indexer, CrawlResult, RabbitMQConnectionParameters, IndexerType, \
     DatabaseConnectionParameters, Language
 from github import Github
 
 # using username and password
+from github_indexer_parameters import GitHubIndexerParameters
 
 LANGUAGES = {"C": 1,
              "C++": 2,
@@ -23,28 +26,50 @@ class GitHubIndexer(Indexer):
 
     def __init__(self, indexer_type: IndexerType, rabbitmq_parameters: RabbitMQConnectionParameters,
                  database_parameters: DatabaseConnectionParameters, rejected_publish_delay: int,
-                 config: configparser):
+                 github_indexer_parameters: GitHubIndexerParameters):
         super().__init__(indexer_type, rabbitmq_parameters, database_parameters, rejected_publish_delay)
 
-        self.github_indexer_parameters = config
-        self.g = Github(config['DEFAULT']['GITHUB_PERSONAL_TOKEN'])
+        self.github_indexer_parameters = github_indexer_parameters
+        if github_indexer_parameters.github_personal_token:
+            self.g = Github(github_indexer_parameters.github_personal_token)
+        else:
+            self.g = Github()
+
         self.iter = self.__get_next_repo()
 
     def __get_next_repo(self):
-        min_stars = self.github_indexer_parameters['DEFAULT']['MIN_STARS']
-        min_forks = self.github_indexer_parameters['DEFAULT']['MIN_FORKS']
-        last_updated = self.github_indexer_parameters['DEFAULT']['LAST_UPDATED']
+        min_stars = self.github_indexer_parameters.min_stars
+        min_forks = self.github_indexer_parameters.min_forks
+        last_updated = self.github_indexer_parameters.last_updated
 
-        for page in range(1000):
-            list_of_repos = self.g.search_repositories(query=f'forks:>={min_forks} stars:>={min_stars}'
-                                                             f' is:public pushed:>={last_updated}',
-                                                       sort='stars', page=page)
+        for page in range(5000):
+
+            while True:
+                try:
+                    list_of_repos = self.g.search_repositories(query=f'forks:>={min_forks} stars:>={min_stars}'
+                                                                     f' is:public pushed:>={last_updated}',
+                                                               sort='stars', page=page)
+                    print("hello1")
+                    break
+                except github.GithubException as e:
+                    print("because of limitations of github-api, system will wait for 30 min")
+                    time.sleep(60 * 30)
+
             for repo in list_of_repos:
-                languages = {x: False for x in Language}
-                for x in repo.get_languages().keys():
-                    y = LANGUAGES.get(x, 0)
-                    if y:
-                        languages[Language(y)] = True
+                languages = {}
+                while True:
+                    try:
+                        for x in repo.get_languages().keys():
+                            y = LANGUAGES.get(x, False)
+                            if y:
+                                languages[Language(y)] = True
+                        break
+                    except github.GithubException as e:
+                        print("because of limitations of github-api, system will wait for 30 min")
+                        time.sleep(60 * 30 )
+
+                if not len(languages):
+                    continue
 
                 yield CrawlResult(
                     id=str(repo.id),
