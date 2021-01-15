@@ -49,7 +49,6 @@ class GitHubIndexer(Indexer):
                     list_of_repos = self.g.search_repositories(query=f'forks:>={min_forks} stars:>={min_stars}'
                                                                      f' is:public pushed:>={last_updated}',
                                                                sort='stars', page=page)
-                    print("hello1")
                     break
                 except github.GithubException as e:
                     print("because of limitations of github-api, system will wait for 30 min")
