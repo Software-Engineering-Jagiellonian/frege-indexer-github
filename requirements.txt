@@ -1,6 +1,6 @@
 pika
 psycopg2-binary>=2.8
-fregeindexerlib
+fregeindexerlib==0.4.0
 beautifulsoup4
 requests
 pygithub
